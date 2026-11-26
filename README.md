@@ -9,6 +9,10 @@ Trainiere, sammle Punkte und tritt jede Woche gegen deine Freunde an: Wochen-Cha
 | `legacy-pwa/` | Erste Web-App (Vanilla JS) – nur noch als Referenz |
 | `docs/` | QR-Code zum Laden der App, Screenshots |
 
+**Web-Version:** https://nicknellessen00-source.github.io/Fitness-Duell/ · **Download-Seite (QR-Code):** https://nicknellessen00-source.github.io/Fitness-Duell/download
+
+Die Web-Version wird bei jedem Push auf `main` automatisch gebaut und auf GitHub Pages veröffentlicht (`.github/workflows/pages.yml`). Die Android-App für den Download-Button gehört als `FitDuell.apk` in ein GitHub-Release.
+
 ---
 
 # Native App (iPhone & Android)
