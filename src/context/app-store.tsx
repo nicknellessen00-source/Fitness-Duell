@@ -5,6 +5,7 @@ import { AppState } from 'react-native';
 import * as Cloud from '@/lib/cloud';
 import { balance, emptyInv, pendingRewards, SHOP } from '@/lib/coins';
 import { health, sensor } from '@/lib/health';
+import { addSample, removeSample, withoutSample } from '@/lib/sample';
 import { clearReminders, planReminders } from '@/lib/notify';
 import { GOALS, type GoalId } from '@/lib/data';
 import { COLORS, DEMO, digestOf } from '@/lib/logic';
@@ -47,6 +48,8 @@ interface Store {
   /** Einsatz für ein Online-Duell */
   stake(duelCloudId: string, amount: number): Promise<string | null>;
   syncCoins(): Promise<void>;
+  /** Beispieldaten aus dem Konto entfernen */
+  clearSample(): void;
 }
 const Ctx = createContext<Store | null>(null);
 export const useStore = () => { const s = useContext(Ctx); if (!s) throw new Error('StoreProvider fehlt'); return s; };
@@ -82,7 +85,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const refresh = async () => {
       try {
         const u = userRef.current; if (!u) return;
-        const code = await Cloud.pushDigest(digestOf(u));
+        const code = await Cloud.pushDigest(digestOf(withoutSample(u)));
         const [friends, duels] = await Promise.all([Cloud.friends(), Cloud.duels().catch(() => [])]);
         if (alive) setCloud(c => ({ ...c, status: 'on', code, friends, duels, err: '' }));
         syncCoinsRef.current?.();
@@ -113,7 +116,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     userRef.current = next; setUser(next); persist(next);
     if (next.cloud) {
       if (pushTimer.current) clearTimeout(pushTimer.current);
-      pushTimer.current = setTimeout(() => { Cloud.pushDigest(digestOf(next)).catch(() => {}); }, 3000);
+      pushTimer.current = setTimeout(() => { Cloud.pushDigest(digestOf(withoutSample(next))).catch(() => {}); }, 3000);
     }
   }, [persist]);
 
@@ -125,6 +128,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       favorites: [], workouts: [], weights: [{ d: today(), kg: d.weightKg }], steps: {}, water: {}, food: {}, duels: [],
       friends: DEMO.map(x => ({ id: x.id, kind: 'demo' as const })), planIdx: 0, seen: {},
     };
+    addSample(u);
     await persist(u); await start(u);
   }, [persist, start]);
 
@@ -174,7 +178,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       fromShortcut = rows.length > 0;
     }
     update(x => {
-      for (const [k, v] of Object.entries(merged)) if (v > (x.steps[k] || 0)) x.steps[k] = v;
+      for (const [k, v] of Object.entries(merged)) {
+        // echte Schritte ersetzen einen Beispielwert, auch wenn sie niedriger sind
+        if (x.sample?.steps[k] != null && x.sample.steps[k] === x.steps[k]) { x.steps[k] = v; delete x.sample.steps[k]; }
+        else if (v > (x.steps[k] || 0)) x.steps[k] = v;
+      }
       if (x.health?.on) x.health = { ...x.health, last: Date.now() };
       if (fromShortcut) x.shortcutLast = Date.now();
     });
@@ -313,14 +321,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     update(x => { const inv = x.inv || emptyInv(); if (inv.jokers < 1 || inv.jokerWeeks.includes(mon)) return; inv.jokers -= 1; inv.jokerWeeks = [...inv.jokerWeeks, mon]; x.inv = inv; });
   }, [update]);
 
+  const clearSample = useCallback(() => { update(x => removeSample(x)); }, [update]);
+
   const refreshCloud = useCallback(async () => {
     if (!userRef.current?.cloud) return;
     const [friends, duels] = await Promise.all([Cloud.friends(), Cloud.duels()]);
     setCloud(c => ({ ...c, friends, duels }));
   }, []);
 
-  const value = useMemo<Store>(() => ({ ready, user, accounts, cloud, register, login, cloudLogin, logout, deleteAccount, update, connectHealth, connectSensor, syncSteps, refreshCloud, coinFlash, buy, equip, applyJoker, cheer, stake, syncCoins }),
-    [ready, user, accounts, cloud, register, login, cloudLogin, logout, deleteAccount, update, connectHealth, connectSensor, syncSteps, refreshCloud, coinFlash, buy, equip, applyJoker, cheer, stake, syncCoins]);
+  const value = useMemo<Store>(() => ({ ready, user, accounts, cloud, register, login, cloudLogin, logout, deleteAccount, update, connectHealth, connectSensor, syncSteps, refreshCloud, coinFlash, buy, equip, applyJoker, cheer, stake, syncCoins, clearSample }),
+    [ready, user, accounts, cloud, register, login, cloudLogin, logout, deleteAccount, update, connectHealth, connectSensor, syncSteps, refreshCloud, coinFlash, buy, equip, applyJoker, cheer, stake, syncCoins, clearSample]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

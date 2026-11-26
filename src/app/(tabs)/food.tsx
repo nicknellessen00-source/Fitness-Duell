@@ -3,6 +3,7 @@ import { Barcode, ScanText, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
+import { Spot } from '@/components/spot';
 import { VoiceButton } from '@/components/voice-button';
 import { Btn, Card, Divider, Icon, Num, Row, Screen, Seg, T, Track } from '@/components/ui';
 import { C, S } from '@/constants/theme';
@@ -59,7 +60,7 @@ export default function Food() {
         </Row>
       </Card>
 
-      <Row>
+      <Spot id="foodAdd"><Row>
         {([[Barcode, 'Barcode', '/scan'], [ScanText, 'Etikett', '/label'], [Search, 'Suchen', '/food-search']] as const).map(([I, l, href]) => (
           <Pressable key={l} onPress={() => router.push(href)} testID={'f-' + href.slice(1)}
             style={({ pressed }) => ({ flex: 1, height: 72, borderRadius: 12, backgroundColor: pressed ? C.raised : C.card, alignItems: 'center', justifyContent: 'center', gap: S[1] + 2 })}>
@@ -67,7 +68,7 @@ export default function Food() {
             <T v="small">{l}</T>
           </Pressable>
         ))}
-      </Row>
+      </Row></Spot>
 
       <Card>
         <T v="h3">Mahlzeit eintragen</T>

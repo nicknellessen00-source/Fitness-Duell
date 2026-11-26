@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { CoinIcon } from '@/components/coin';
 import { DuelRow } from '@/components/duel-row';
+import { Spot } from '@/components/spot';
 import { Avatar, Bib, Btn, Card, Divider, Field, Num, Row, Screen, Seg, T, ValueRow } from '@/components/ui';
 import { C, S } from '@/constants/theme';
 import { useStore, useUser } from '@/context/app-store';
@@ -33,7 +34,7 @@ export default function Friends() {
     <Screen title="Rangliste">
       <Seg items={[['week', 'Diese Woche'], ['total', 'Saison, 12 Wochen']]} value={mode} onChange={setMode} />
 
-      <Card style={{ paddingVertical: S[2], gap: 0 }} testID="scoreboard">
+      <Spot id="board"><Card style={{ paddingVertical: S[2], gap: 0 }} testID="scoreboard">
         {lb.map((p, i) => {
           const gap = i > 0 ? pts(lb[i - 1]) - pts(p) : 0;
           const ch = p.week.done ? 'Challenge geschafft' : p.week.status === 'failed' ? 'Challenge verpasst' : p.week.status === 'joker' ? 'Joker eingesetzt' : `Challenge ${Math.round(Math.min(100, (p.week.prog / p.week.ch.target) * 100))} %`;
@@ -61,7 +62,7 @@ export default function Friends() {
             </View>
           );
         })}
-      </Card>
+      </Card></Spot>
 
       <Card style={{ gap: 0 }} testID="duels">
         <Row between style={{ marginBottom: S[1] }}>

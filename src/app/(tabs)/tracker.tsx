@@ -3,6 +3,7 @@ import { Dumbbell, Footprints, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
+import { Spot } from '@/components/spot';
 import { Btn, Card, Divider, Field, Icon, Num, Row, Screen, T, Track, ValueRow } from '@/components/ui';
 import { C, S } from '@/constants/theme';
 import { useStore, useUser } from '@/context/app-store';
@@ -59,7 +60,7 @@ export default function Tracker() {
         </Row>
       </Card>
 
-      <Card>
+      <Spot id="steps"><Card>
         <Row between><T v="h3">Schritte</T><T v="small" tone="muted">Ziel {nf(goal)}</T></Row>
         <View style={{ height: 140 }}>
           <View style={{ position: 'absolute', left: 0, right: 0, bottom: 20 + (goal / maxSteps) * 120, borderTopWidth: 1, borderStyle: 'dashed', borderColor: C.lineStrong }} />
@@ -119,7 +120,7 @@ export default function Tracker() {
           <Field label="Schritte heute" value={steps} onChangeText={setSteps} keyboardType="number-pad" placeholder={nf(u.steps[t] || 0)} />
           <Btn title="Speichern" onPress={saveSteps} />
         </Row>
-      </Card>
+      </Card></Spot>
 
       <Card>
         <T v="h3">Gewicht</T>

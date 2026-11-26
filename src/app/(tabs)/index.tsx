@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 import { ActiveBanner } from '@/components/active-banner';
 import { ChallengeCard } from '@/components/challenge-card';
 import { CoinBadge } from '@/components/coin';
+import { Spot } from '@/components/spot';
 import { DuelRow } from '@/components/duel-row';
 import { Avatar, Bib, Btn, Card, Divider, Icon, Num, Ring, Row, Screen, T } from '@/components/ui';
 import { C, S } from '@/constants/theme';
@@ -18,7 +19,7 @@ import { isoWeekNo, mondayOf, nf, parseKey, today } from '@/lib/util';
 
 export default function Home() {
   const u = useUser();
-  const { cloud, update } = useStore();
+  const { cloud, update, clearSample } = useStore();
   const p = u.profile, c = calc(p), t = today();
   const dg = digestOf(u); const d = dg.days[t];
   const eaten = (u.food[t] || []).reduce((s, x) => s + x.kcal, 0);
@@ -39,13 +40,24 @@ export default function Home() {
 
   return (
     <Screen title={`Woche ${isoWeekNo(t)}`}
-      right={<Row gap={S[2]}><CoinBadge /><Pressable onPress={() => router.push('/profile')} accessibilityLabel="Profil" testID="profileBtn"><Avatar name={p.name} color={p.color} size={36} frame={frameColor(u.inv?.frame)} /></Pressable></Row>}>
+      right={<Row gap={S[2]}><Spot id="coins"><CoinBadge /></Spot><Pressable onPress={() => router.push('/profile')} accessibilityLabel="Profil" testID="profileBtn"><Avatar name={p.name} color={p.color} size={36} frame={frameColor(u.inv?.frame)} /></Pressable></Row>}>
       <T v="small" tone="secondary" style={{ marginTop: -S[3] }}>{dateTxt}</T>
 
       <ActiveBanner />
-      <ChallengeCard ws={ws} />
+      {(!!u.sample || u.workouts.some(w => w.sample)) && (
+        <Card style={{ backgroundColor: 'rgba(78,122,0,0.08)', paddingVertical: S[3] }} testID="sampleBanner">
+          <Row gap={S[3]}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <T v="small" strong>Beispieldaten</T>
+              <T v="meta" tone="secondary">So sieht FitDuell nach zwei Wochen aus. Nur für dich sichtbar, ohne FitCoins.</T>
+            </View>
+            <Btn title="Entfernen" small onPress={clearSample} testID="clearSample" />
+          </Row>
+        </Card>
+      )}
+      <Spot id="challenge"><ChallengeCard ws={ws} /></Spot>
 
-      <Pressable onPress={() => router.navigate('/friends')} testID="rankCard">
+      <Spot id="rank"><Pressable onPress={() => router.navigate('/friends')} testID="rankCard">
         <Card>
           <Row gap={S[3]}>
             <Bib n={myPos} lead={myPos === 1} />
@@ -57,7 +69,7 @@ export default function Home() {
             <Icon icon={ChevronRight} />
           </Row>
         </Card>
-      </Pressable>
+      </Pressable></Spot>
 
       <Card>
         <Row between><T v="h3">Heute</T></Row>

@@ -2,6 +2,7 @@
  * Verdient wird aus vorhandenen Daten; jede Buchung hat einen eindeutigen Schlüssel, damit nichts doppelt zählt. */
 import { digestOf, duelState, weekStats } from './logic';
 import type { CoinReason, CoinTx, Digest, Duel, Inventory, User } from './types';
+import { withoutSample } from './sample';
 import { addDays, mondayOf, today } from './util';
 
 export const COIN = {
@@ -36,7 +37,8 @@ export const emptyInv = (): Inventory => ({ jokers: 0, jokerWeeks: [], owned: []
 export const balance = (u: User) => (u.coins || []).reduce((s, t) => s + t.amount, 0);
 
 /** Alle Belohnungen, die sich aus den aktuellen Daten ergeben (ohne bereits gebuchte) */
-export function pendingRewards(u: User, cloudFriends: Digest[] = [], cloudDuels: Duel[] = []): CoinTx[] {
+export function pendingRewards(full: User, cloudFriends: Digest[] = [], cloudDuels: Duel[] = []): CoinTx[] {
+  const u = withoutSample(full); // Beispieldaten bringen keine FitCoins
   const have = new Set((u.coins || []).map(t => t.key));
   const out: CoinTx[] = []; const now = Date.now();
   const add = (key: string, amount: number, reason: CoinReason, note?: string) => { if (!have.has(key)) { have.add(key); out.push({ key, amount, reason, at: now, note }); } };

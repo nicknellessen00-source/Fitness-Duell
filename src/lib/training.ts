@@ -15,7 +15,7 @@ export const fmtDur = (ms: number) => {
 export function bestValue(u: User, id: string, skipWorkout?: string) {
   const e = EX[id]; let kg = 0, reps = 0, sec = 0;
   for (const w of u.workouts) {
-    if (w.id === skipWorkout) continue;
+    if (w.id === skipWorkout || w.sample) continue;
     for (const it of w.items) if (it.ex === id) for (const s of it.sets) {
       kg = Math.max(kg, +(s.kg || 0)); reps = Math.max(reps, +(s.reps || 0)); sec = Math.max(sec, +(s.sec || 0));
     }
@@ -29,7 +29,7 @@ export function bestText(u: User, id: string) {
   return b.reps ? `${b.reps} Wdh.` : '';
 }
 export function lastKg(u: User, id: string) {
-  for (let i = u.workouts.length - 1; i >= 0; i--) for (const it of u.workouts[i].items) if (it.ex === id) {
+  for (let i = u.workouts.length - 1; i >= 0; i--) if (!u.workouts[i].sample) for (const it of u.workouts[i].items) if (it.ex === id) {
     const s = it.sets.filter(x => +(x.kg || 0) > 0); if (s.length) return +(s[s.length - 1].kg || 0);
   }
   return 0;

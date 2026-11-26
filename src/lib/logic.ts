@@ -66,7 +66,8 @@ export function digestOf(u: User): Digest {
     if (days[k]) continue;
     days[k] = { ...emptyDay(), ...JSON.parse(JSON.stringify(d)) };
   }
-  return { id: u.id, name: u.profile.name, color: u.profile.color, goal: u.profile.goal, since: u.createdAt, days, weights: (u.weights || []).map(w => [w.d, w.kg]), at: Date.now(), jokers: u.inv?.jokerWeeks || [], frame: u.inv?.frame };
+  return { id: u.id, name: u.profile.name, color: u.profile.color, goal: u.profile.goal, since: u.createdAt, days, weights: (u.weights || []).map(w => [w.d, w.kg]), at: Date.now(), jokers: u.inv?.jokerWeeks || [], frame: u.inv?.frame,
+    countFrom: u.sample ? Object.keys(days).sort()[0] : undefined };
 }
 
 /* ---------- Demo-Freunde ---------- */
@@ -108,7 +109,7 @@ type Sum = { vol: number; wo: number; kcal: number; steps: number; min: number; 
 function sumDays(dg: Digest, keys: string[]): Sum {
   const a: Sum = { vol: 0, wo: 0, kcal: 0, steps: 0, min: 0, cardio: 0, waterDays: 0, foodDays: 0, reps: {}, sec: {} };
   for (const k of keys) {
-    const d = dg.days[k]; if (!d || k < dg.since) continue;
+    const d = dg.days[k]; if (!d || k < (dg.countFrom || dg.since)) continue;
     for (const f of ['vol', 'wo', 'kcal', 'steps', 'min', 'cardio'] as const) a[f] += d[f] || 0;
     if ((d.water || 0) >= 2500) a.waterDays++;
     if (d.food) a.foodDays++;

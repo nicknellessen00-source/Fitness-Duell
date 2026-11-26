@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { C } from '@/constants/theme';
+import { StartSplash } from '@/components/start-splash';
 import { StoreProvider, useStore } from '@/context/app-store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -54,6 +55,7 @@ export default function RootLayout() {
         <StoreProvider>
           <StatusBar style="dark" />
           <RootStack />
+          <StartSplash />
         </StoreProvider>
       </ThemeProvider>
     </SafeAreaProvider>

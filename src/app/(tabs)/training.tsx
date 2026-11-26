@@ -5,6 +5,7 @@ import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { ActiveBanner } from '@/components/active-banner';
 import { ExerciseThumb } from '@/components/exercise-anim';
+import { Spot } from '@/components/spot';
 import { Btn, Card, Divider, Icon, Num, Row, Screen, Seg, T } from '@/components/ui';
 import { C, R, S } from '@/constants/theme';
 import { useStore, useUser } from '@/context/app-store';
@@ -44,10 +45,10 @@ export default function Training() {
   }, [u.workouts]);
   const lastSports = u.workouts.filter(w => w.sport).slice(-5).reverse();
 
-  const sportRow = (id: string) => {
+  const sportRow = (id: string, prefix = 'sp-') => {
     const sp = SP[id];
     return (
-      <Pressable key={id} onPress={() => router.push({ pathname: '/sport/[id]', params: { id } })} testID={'sp-' + id}
+      <Pressable key={id} onPress={() => router.push({ pathname: '/sport/[id]', params: { id } })} testID={prefix + id}
         style={({ pressed }) => ({ flexBasis: '47%', flexGrow: 1, height: 52, flexDirection: 'row', alignItems: 'center', gap: S[2] + 2, paddingHorizontal: S[3], borderRadius: R.card, backgroundColor: pressed ? C.raised : C.card })}>
         <Icon icon={sportIcon(id, sp.cat)} sf={SPORT_SF[id]} color={C.accentInk} />
         <T v="small" numberOfLines={1} style={{ flex: 1 }}>{sp.name}</T>
@@ -63,7 +64,7 @@ export default function Training() {
       {sub === 'plan' && (<>
         <T v="small" tone="secondary">Für dein Ziel {GOALS[u.profile.goal].label.replace('-spezifisch', '')}</T>
         {plans.map((p, i) => (
-          <Card key={p.name}>
+          <Spot key={p.name} id={i === 0 ? 'plan' : 'plan' + i}><Card>
             <Row between>
               <View style={{ flex: 1 }}>
                 <T v="h3">{p.name}</T>
@@ -84,13 +85,13 @@ export default function Training() {
                 );
               })}
             </View>
-          </Card>
+          </Card></Spot>
         ))}
       </>)}
 
       {sub === 'sport' && (<>
         <T v="small" tone="secondary">Live mit Stoppuhr starten oder nachtragen. Zählt wie ein Training für Punkte und Challenges.</T>
-        {recent.length > 0 && (<View style={{ gap: S[2] }}><T v="meta" tone="muted">Zuletzt</T><Row wrap>{recent.map(sportRow)}</Row></View>)}
+        {recent.length > 0 && (<View style={{ gap: S[2] }}><T v="meta" tone="muted">Zuletzt</T><Row wrap>{recent.map(id => sportRow(id, 'sp-recent-'))}</Row></View>)}
         {SPORT_CATS.map(c => (
           <View key={c} style={{ gap: S[2] }}>
             <T v="meta" tone="muted">{c}</T>
