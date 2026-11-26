@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FitDuell laden</title>
+<meta name="description" content="FitDuell auf dein Handy laden – Android-App oder iPhone-Web-App">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#F2F2F7">
+<style>
+  :root { --bg:#F2F2F7; --card:#fff; --raised:#EEEEF3; --text:#000; --text2:#5C5C61; --muted:#8A8A8F; --accent:#D7FF3A; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:17px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, "Segoe UI", sans-serif; -webkit-font-smoothing:antialiased; }
+  main { max-width:520px; margin:0 auto; padding:calc(env(safe-area-inset-top) + 32px) 16px calc(env(safe-area-inset-bottom) + 40px); }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:600; font-size:20px; }
+  .logo img { width:36px; height:36px; border-radius:9px; }
+  h1 { font-size:34px; line-height:1.15; font-weight:700; margin:32px 0 8px; letter-spacing:.3px; }
+  p.sub { color:var(--text2); margin:0 0 24px; }
+  .card { background:var(--card); border-radius:12px; padding:16px; margin-bottom:12px; }
+  .card h2 { font-size:17px; margin:0 0 4px; font-weight:600; }
+  .card p { color:var(--text2); font-size:15px; margin:0 0 12px; }
+  .btn { display:flex; align-items:center; justify-content:center; gap:8px; min-height:50px; border-radius:14px; text-decoration:none; font-weight:600; font-size:17px; background:var(--raised); color:var(--text); }
+  .btn.primary { background:var(--accent); color:#000; }
+  ol { color:var(--text2); font-size:15px; margin:8px 0 0; padding-left:20px; }
+  ol li { margin:4px 0; }
+  .meta { color:var(--muted); font-size:13px; text-align:center; margin-top:20px; }
+  .meta a { color:var(--muted); }
+  .hide { display:none; }
+  svg { width:20px; height:20px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo"><img src="/apple-touch-icon.png" alt="">FitDuell</div>
+  <h1>FitDuell auf dein Handy</h1>
+  <p class="sub">Trainiere, sammle Punkte und tritt jede Woche gegen deine Freunde an.</p>
+
+  <section class="card" id="android">
+    <h2>Android</h2>
+    <p>Die App direkt installieren – ohne Play Store.</p>
+    <a class="btn primary" id="apk" href="/fitduell.apk" download>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.62 2.48A2 2 0 0 0 4.56 21h14.88a2 2 0 0 0 1.94-1.52L22 17"/></svg>
+      App herunterladen
+    </a>
+    <ol>
+      <li>Datei öffnen, wenn der Download fertig ist</li>
+      <li>Fragt Android nach „Unbekannte Apps“: für deinen Browser erlauben</li>
+      <li>„Installieren“ tippen</li>
+    </ol>
+  </section>
+
+  <section class="card" id="ios">
+    <h2>iPhone</h2>
+    <p>FitDuell als Web-App – läuft im Browser und liegt danach wie eine App auf deinem Home-Bildschirm.</p>
+    <a class="btn primary" href="/">Web-App öffnen</a>
+    <ol>
+      <li>In Safari öffnen</li>
+      <li>Unten auf „Teilen“ tippen (Quadrat mit Pfeil)</li>
+      <li>„Zum Home-Bildschirm“ wählen</li>
+    </ol>
+  </section>
+
+  <p class="meta">Testversion · <a href="/datenschutz">Datenschutz</a></p>
+</main>
+<script>
+  // Passende Anleitung zuerst zeigen
+  var ua = navigator.userAgent || '';
+  var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var android = /Android/.test(ua);
+  var main = document.querySelector('main');
+  if (ios) main.insertBefore(document.getElementById('ios'), document.getElementById('android'));
+  if (android) document.getElementById('ios').querySelector('.btn').classList.remove('primary');
+  if (ios) document.getElementById('apk').classList.remove('primary');
+</script>
+</body>
+</html>

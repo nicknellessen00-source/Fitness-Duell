@@ -1,0 +1,119 @@
+{
+  "expo": {
+    "name": "FitDuell",
+    "slug": "fitduell",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "fitduell",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "app.fitduell",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "FitDuell hört zu, wenn du Mahlzeiten per Sprache einträgst.",
+        "NSSpeechRecognitionUsageDescription": "FitDuell wandelt deine gesprochene Mahlzeit in Text um.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#D7FF3A",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "app.fitduell",
+      "permissions": [
+        "android.permission.health.READ_STEPS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.ACTIVITY_RECOGNITION"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "FitDuell",
+      "backgroundColor": "#F2F2F7",
+      "themeColor": "#F2F2F7",
+      "lang": "de"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F2F2F7",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "FitDuell zählt deine Schritte für Tracker, Wochen-Challenge und Rangliste."
+        }
+      ],
+      "expo-speech-recognition",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FitDuell nutzt die Kamera, um Barcodes von Lebensmitteln zu scannen.",
+          "microphonePermission": "FitDuell hört zu, wenn du Mahlzeiten per Sprache einträgst.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FitDuell liest Nährwerttabellen aus deinen Fotos aus.",
+          "cameraPermission": "FitDuell fotografiert Nährwerttabellen, um die Werte auszulesen.",
+          "microphonePermission": "FitDuell hört zu, wenn du Mahlzeiten per Sprache einträgst."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "FitDuell hört zu, wenn du Mahlzeiten per Sprache einträgst.",
+          "speechRecognitionPermission": "FitDuell wandelt deine gesprochene Mahlzeit in Text um."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#D7FF3A"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "owner": "nellessenns-team",
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "3d76864a-44c4-4a65-aafc-2ea791d1a6b7"
+      }
+    }
+  }
+}
