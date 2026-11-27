@@ -25,7 +25,7 @@ Einmalig nötig:
 1. **Expo-Konto** (kostenlos): https://expo.dev/signup
 2. **Apple Developer Program** (99 $/Jahr) für iPhone/TestFlight: https://developer.apple.com/programs/
 3. **Google Play Console** (einmalig 25 $) für Android: https://play.google.com/console
-4. Im Supabase SQL Editor `supabase/delete_account.sql` (erledigt) und `supabase/coins.sql` (FitCoins online: Kontostand, Anfeuern, Duell-Einsätze) ausführen.
+4. Im Supabase SQL Editor `supabase/delete_account.sql` (erledigt) `supabase/coins.sql` (FitCoins online, erledigt) und `supabase/matches.sql` (Sport-Herausforderungen mit Chat und Einsatz) ausführen.
 
 Auf einem Rechner mit Node.js (kein Mac nötig, gebaut wird in der Expo-Cloud):
 

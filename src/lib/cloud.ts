@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
-import type { CoinReason, CoinTx, Digest, Duel } from './types';
+import type { CoinReason, CoinTx, Digest, Duel, Match, MatchStatus } from './types';
 
 /* Öffentliche Projekt-Adresse + Publishable Key (dürfen in der App stehen, Schutz läuft über RLS) */
 export const SUPABASE_URL = 'https://cnfdowfzsjhumvipptzf.supabase.co';
@@ -109,6 +109,30 @@ export async function duelStakes(duelIds: string[]): Promise<{ duel_id: string; 
   return check(await sb().from('duel_stakes').select('duel_id,user_id,amount').in('duel_id', duelIds)) as { duel_id: string; user_id: string; amount: number }[];
 }
 
+/* ---------- Sport-Herausforderungen (supabase/matches.sql) ---------- */
+interface MatchRow { id: string; challenger: string; opponent: string; sport: string; message: string | null; play_at: string | null; place: string | null; stake: number; status: MatchStatus; winner: string | null; score: string | null; reported_by: string | null; created_at: string; updated_at: string }
+interface MatchMsgRow { id: number; match_id: string; user_id: string; text: string; created_at: string }
+export async function matches(): Promise<Match[]> {
+  const user = await me(); if (!user) return [];
+  const rows = check(await sb().from('matches').select('*').order('updated_at', { ascending: false }).limit(50)) as MatchRow[];
+  if (!rows.length) return [];
+  const msgs = check(await sb().from('match_messages').select('id,match_id,user_id,text,created_at').in('match_id', rows.map(r => r.id)).order('created_at')) as MatchMsgRow[];
+  return rows.map(r => ({
+    id: r.id, cloud: true, challenger: r.challenger, opponent: r.opponent, sport: r.sport, message: r.message || undefined,
+    playAt: r.play_at ? Date.parse(r.play_at) : null, place: r.place || undefined, stake: r.stake, status: r.status,
+    winner: r.winner, score: r.score || undefined, reportedBy: r.reported_by, createdAt: Date.parse(r.created_at), updatedAt: Date.parse(r.updated_at),
+    messages: msgs.filter(m => m.match_id === r.id).map(m => ({ id: String(m.id), user: m.user_id, text: m.text, at: Date.parse(m.created_at) })),
+  }));
+}
+export async function createMatch(to: string, sport: string, message: string, playAt: number | null, place: string, stake: number) {
+  return check(await sb().rpc('create_match', { p_to: to, p_sport: sport, p_message: message, p_play_at: playAt ? new Date(playAt).toISOString() : null, p_place: place, p_stake: stake })) as string;
+}
+export async function respondMatch(id: string, accept: boolean, message: string) { return check(await sb().rpc('respond_match', { p_match: id, p_accept: accept, p_message: message })); }
+export async function cancelMatch(id: string, message: string) { return check(await sb().rpc('cancel_match', { p_match: id, p_message: message })); }
+export async function reportMatch(id: string, winner: string | null, score: string) { return check(await sb().rpc('report_match', { p_match: id, p_winner: winner, p_score: score })); }
+export async function confirmMatch(id: string, ok: boolean, message: string) { return check(await sb().rpc('confirm_match', { p_match: id, p_ok: ok, p_message: message })); }
+export async function postMatchMessage(id: string, text: string) { return check(await sb().rpc('post_match_message', { p_match: id, p_text: text })); }
+
 export async function removeFriend(fid: string) { check(await sb().rpc('remove_friend', { fid })); }
 
 /** Echtzeit: bei Änderungen an Digests/Duellen benachrichtigen */
@@ -118,6 +142,8 @@ export function subscribe(cb: () => void) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'duels' }, cb)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'coin_ledger' }, cb)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'duel_stakes' }, cb)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, cb)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'match_messages' }, cb)
     .subscribe();
   return () => { sb().removeChannel(ch); };
 }

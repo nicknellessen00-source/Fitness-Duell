@@ -1,13 +1,13 @@
 /* Auf dem iPhone werden die Lucide-Icons durch passende SF Symbols ersetzt (Apple-Systemsymbole) */
 import {
-  Activity, Barcode, Bike, Camera, ChartColumn, Check, ImageIcon, Mic, ScanText, Square, ChevronLeft, ChevronRight, Droplet, Dumbbell, Flag, Flame, Footprints, HandFist, HeartPulse, House,
+  Activity, ArrowUp, Barcode, Bike, Camera, ChartColumn, Check, ImageIcon, Mic, ScanText, Square, ChevronLeft, ChevronRight, Droplet, Dumbbell, Flag, Flame, Footprints, HandFist, HeartPulse, House,
   Minus, Mountain, MountainSnow, Music, Pause, PersonStanding, Play, Plus, Sailboat, Search, Snowflake, Star, Timer, Trash2, Trophy, UtensilsCrossed,
   Volleyball, Waves, X, Zap, type LucideIcon,
 } from 'lucide-react-native';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
 export const SF_FOR = new Map<LucideIcon, SFSymbol>([
-  [Activity, 'figure.mixed.cardio'], [Barcode, 'barcode.viewfinder'], [Camera, 'camera'], [ImageIcon, 'photo'], [Mic, 'mic'], [ScanText, 'text.viewfinder'], [Square, 'stop.fill'], [Bike, 'figure.outdoor.cycle'], [ChartColumn, 'chart.bar'], [Check, 'checkmark'],
+  [Activity, 'figure.mixed.cardio'], [ArrowUp, 'arrow.up'], [Barcode, 'barcode.viewfinder'], [Camera, 'camera'], [ImageIcon, 'photo'], [Mic, 'mic'], [ScanText, 'text.viewfinder'], [Square, 'stop.fill'], [Bike, 'figure.outdoor.cycle'], [ChartColumn, 'chart.bar'], [Check, 'checkmark'],
   [ChevronLeft, 'chevron.left'], [ChevronRight, 'chevron.right'], [Droplet, 'drop'], [Dumbbell, 'dumbbell'], [Flag, 'flag'],
   [Flame, 'flame'], [Footprints, 'figure.run'], [HandFist, 'figure.boxing'], [HeartPulse, 'heart'], [House, 'house'], [Minus, 'minus'],
   [Mountain, 'mountain.2'], [MountainSnow, 'figure.climbing'], [Music, 'figure.dance'], [Pause, 'pause.fill'], [PersonStanding, 'figure.yoga'],

@@ -7,6 +7,7 @@ import { ChallengeCard } from '@/components/challenge-card';
 import { CoinBadge } from '@/components/coin';
 import { Spot } from '@/components/spot';
 import { DuelRow } from '@/components/duel-row';
+import { MatchRow } from '@/components/match-row';
 import { Avatar, Bib, Btn, Card, Divider, Icon, Num, Ring, Row, Screen, T } from '@/components/ui';
 import { C, S } from '@/constants/theme';
 import { useStore, useUser } from '@/context/app-store';
@@ -14,6 +15,7 @@ import { PLANS } from '@/lib/data';
 import { allDuels, calc, digestOf, EX, leaderboard, weekStats } from '@/lib/logic';
 import { tap } from '@/lib/haptics';
 import { frameColor } from '@/lib/coins';
+import { allMatches, matchState } from '@/lib/matches';
 import { planSession } from '@/lib/training';
 import { isoWeekNo, mondayOf, nf, parseKey, today } from '@/lib/util';
 
@@ -30,6 +32,7 @@ export default function Home() {
   const plans = PLANS[p.goal]; const plan = plans[(u.planIdx || 0) % plans.length];
   const water = u.water[t] || 0;
   const activeDuels = allDuels(u, cloud.duels).filter(d => d.end >= t);
+  const todo = allMatches(u, cloud.matches).filter(m => matchState(u, m).needsMe || m.status === 'accepted' || m.status === 'reported');
   const dateTxt = parseKey(t).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
   const rings = [
@@ -53,6 +56,12 @@ export default function Home() {
             </View>
             <Btn title="Entfernen" small onPress={clearSample} testID="clearSample" />
           </Row>
+        </Card>
+      )}
+      {todo.length > 0 && (
+        <Card style={{ gap: 0 }} testID="matchTodo">
+          <T v="h3">{todo.length === 1 ? 'Herausforderung' : `${todo.length} Herausforderungen`}</T>
+          {todo.map((m, i) => <View key={m.id}>{i > 0 && <Divider />}<MatchRow m={m} /></View>)}
         </Card>
       )}
       <Spot id="challenge"><ChallengeCard ws={ws} /></Spot>

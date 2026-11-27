@@ -34,9 +34,20 @@ export interface User {
   coins?: CoinTx[];
   /** Gekaufte Dinge und Auswahl */
   inv?: Inventory;
+  /** Herausforderungen gegen Demo-Freunde (lokal, ohne Einsatz) */
+  matches?: Match[];
   /** Erinnerungen (Wochen-Challenge, Duelle) */
   notify?: { on: boolean };
   cloud?: { uid: string; email: string }; cloudBase?: { days: Record<string, Partial<Day>> }; tourDone?: boolean;
+}
+/* Sport-Herausforderungen zwischen Freunden */
+export type MatchStatus = 'open' | 'accepted' | 'declined' | 'cancelled' | 'reported' | 'done' | 'disputed';
+export interface MatchMsg { id: string; user: string; text: string; at: number }
+export interface Match {
+  id: string; cloud: boolean; challenger: string; opponent: string; sport: string; message?: string;
+  playAt?: number | null; place?: string; stake: number; status: MatchStatus;
+  winner?: string | null; score?: string; reportedBy?: string | null; createdAt: number; updatedAt: number;
+  messages: MatchMsg[];
 }
 export interface CoinTx { key: string; amount: number; reason: CoinReason; at: number; note?: string; synced?: boolean }
 export type CoinReason = 'training' | 'steps' | 'pr' | 'streak' | 'challenge' | 'duel' | 'buy' | 'gift_in' | 'gift_out' | 'stake' | 'pot' | 'refund' | 'start';

@@ -36,6 +36,8 @@ function RootStack() {
         <Stack.Screen name="health-setup" options={{ presentation: 'modal' }} />
         <Stack.Screen name="coins" options={{ presentation: 'modal' }} />
         <Stack.Screen name="cheer" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="match-new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="match/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="duel/[id]" options={{ presentation: 'modal' }} />
       </Stack.Protected>
       <Stack.Screen name="datenschutz" options={{ presentation: 'modal' }} />

@@ -5,12 +5,13 @@ import { AppState } from 'react-native';
 import * as Cloud from '@/lib/cloud';
 import { balance, emptyInv, pendingRewards, SHOP } from '@/lib/coins';
 import { health, sensor } from '@/lib/health';
+import { DEMO_REPLY, msg } from '@/lib/matches';
 import { addSample, removeSample, withoutSample } from '@/lib/sample';
 import { clearReminders, planReminders } from '@/lib/notify';
 import { GOALS, type GoalId } from '@/lib/data';
 import { COLORS, DEMO, digestOf } from '@/lib/logic';
 import { deleteUser, getSession, hashPw, listAccounts, loadUser, saveUser, setSession, type Account } from '@/lib/storage';
-import type { CoinTx, Digest, Duel, Sex, User } from '@/lib/types';
+import type { CoinTx, Digest, Duel, Match, Sex, User } from '@/lib/types';
 import { addDays, today, uid } from '@/lib/util';
 
 export interface RegData {
@@ -22,6 +23,8 @@ interface CloudState {
   status: 'off' | 'connecting' | 'on' | 'error'; code: string | null; friends: Digest[]; duels: Duel[]; err: string;
   /** FitCoins vom Server (null = nicht verfügbar, z. B. coins.sql noch nicht eingespielt) */
   coins: { balance: number; ledger: CoinTx[] } | null; coinsErr: string;
+  /** Sport-Herausforderungen mit echten Freunden (null = matches.sql noch nicht eingespielt) */
+  matches: Match[]; matchesErr: string;
 }
 interface Store {
   ready: boolean; user: User | null; accounts: Account[]; cloud: CloudState;
@@ -50,12 +53,17 @@ interface Store {
   syncCoins(): Promise<void>;
   /** Beispieldaten aus dem Konto entfernen */
   clearSample(): void;
+  /** Sport-Herausforderung verschicken; liefert eine Fehlermeldung oder null */
+  createMatch(p: { friend: { kind: 'cloud' | 'demo'; id: string }; sport: string; message: string; playAt: number | null; place: string; stake: number }): Promise<string | null>;
+  /** Aktion zu einer Herausforderung: antworten, absagen, Ergebnis, bestätigen, Nachricht */
+  matchAct(m: Match, a: { kind: 'respond'; accept: boolean; text?: string } | { kind: 'cancel'; text?: string } | { kind: 'report'; winner: string | null; score: string }
+    | { kind: 'confirm'; ok: boolean; text?: string } | { kind: 'say'; text: string }): Promise<string | null>;
 }
 const Ctx = createContext<Store | null>(null);
 export const useStore = () => { const s = useContext(Ctx); if (!s) throw new Error('StoreProvider fehlt'); return s; };
 export const useUser = () => { const u = useStore().user; if (!u) throw new Error('Nicht angemeldet'); return u; };
 
-const freshCloud = (): CloudState => ({ status: 'off', code: null, friends: [], duels: [], err: '', coins: null, coinsErr: '' });
+const freshCloud = (): CloudState => ({ status: 'off', code: null, friends: [], duels: [], err: '', coins: null, coinsErr: '', matches: [], matchesErr: '' });
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -64,6 +72,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [cloud, setCloud] = useState<CloudState>(freshCloud);
   const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncCoinsRef = useRef<(() => Promise<void>) | null>(null);
+  const loadMatchesRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -88,6 +97,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const code = await Cloud.pushDigest(digestOf(withoutSample(u)));
         const [friends, duels] = await Promise.all([Cloud.friends(), Cloud.duels().catch(() => [])]);
         if (alive) setCloud(c => ({ ...c, status: 'on', code, friends, duels, err: '' }));
+        loadMatchesRef.current?.();
         syncCoinsRef.current?.();
       } catch (e) {
         if (alive) setCloud(c => ({ ...c, status: 'error', err: (e as Error).message }));
@@ -97,7 +107,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     Cloud.currentUser().then(cu => {
       if (!alive) return;
       if (!cu || cu.id !== cloudUid) { setCloud({ ...freshCloud(), status: 'error', err: 'Online-Sitzung abgelaufen – bitte neu anmelden' }); return; }
-      refresh(); stop = Cloud.subscribe(() => { Promise.all([Cloud.friends(), Cloud.duels()]).then(([friends, duels]) => alive && setCloud(c => ({ ...c, friends, duels }))).catch(() => {}); syncCoinsRef.current?.(); });
+      refresh(); stop = Cloud.subscribe(() => { Promise.all([Cloud.friends(), Cloud.duels()]).then(([friends, duels]) => alive && setCloud(c => ({ ...c, friends, duels }))).catch(() => {}); syncCoinsRef.current?.(); loadMatchesRef.current?.(); });
     });
     return () => { alive = false; stop?.(); };
   }, [cloudUid]);
@@ -225,9 +235,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   /* Erinnerungen mit aktuellem Stand neu planen (gebündelt, max. alle 5 s) */
   useEffect(() => {
     if (!user?.notify?.on) return;
-    const id = setTimeout(() => { planReminders(user, cloud.friends, cloud.duels).catch(() => {}); }, 5000);
+    const id = setTimeout(() => { planReminders(user, cloud.friends, cloud.duels, cloud.matches).catch(() => {}); }, 5000);
     return () => clearTimeout(id);
-  }, [user, cloud.friends, cloud.duels]);
+  }, [user, cloud.friends, cloud.duels, cloud.matches]);
 
   const deleteAccount = useCallback(async () => {
     const u = userRef.current; if (!u) return;
@@ -323,14 +333,64 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const clearSample = useCallback(() => { update(x => removeSample(x)); }, [update]);
 
+  /* Sport-Herausforderungen */
+  const loadMatches = useCallback(async () => {
+    if (!userRef.current?.cloud) return;
+    try { const matches = await Cloud.matches(); setCloud(c => ({ ...c, matches, matchesErr: '' })); }
+    catch (e) { const m = (e as Error).message; setCloud(c => ({ ...c, matchesErr: /could not find|schema cache|does not exist/i.test(m) ? 'missing' : m })); }
+  }, []);
+  useEffect(() => { loadMatchesRef.current = loadMatches; }, [loadMatches]);
+  /** Lokale Herausforderung (Demo-Freund) ändern */
+  const localMatch = useCallback((id: string, fn: (m: Match) => void) => {
+    update(x => { const m = (x.matches || []).find(y => y.id === id); if (m) { fn(m); m.updatedAt = Date.now(); } });
+  }, [update]);
+  const createMatch = useCallback<Store['createMatch']>(async p => {
+    const u = userRef.current; if (!u) return 'Nicht angemeldet';
+    if (p.friend.kind === 'cloud') {
+      try { await Cloud.createMatch(p.friend.id, p.sport, p.message, p.playAt, p.place, p.stake); await Promise.all([loadMatches(), syncCoins()]); return null; }
+      catch (e) { const m = (e as Error).message; return /could not find|schema cache/i.test(m) ? 'Herausforderungen sind auf dem Server noch nicht eingerichtet (matches.sql)' : m; }
+    }
+    const id = uid(), now = Date.now();
+    const m: Match = { id, cloud: false, challenger: u.id, opponent: p.friend.id, sport: p.sport, message: p.message || undefined, playAt: p.playAt, place: p.place || undefined,
+      stake: 0, status: 'open', createdAt: now, updatedAt: now, messages: p.message ? [msg(u.id, p.message)] : [] };
+    update(x => { x.matches = [m, ...(x.matches || [])]; });
+    // Demo-Freund sagt nach kurzer Zeit zu
+    setTimeout(() => localMatch(id, y => { if (y.status === 'open') { y.status = 'accepted'; y.messages.push(msg(y.opponent, DEMO_REPLY.accept())); } }), 1800);
+    return null;
+  }, [update, localMatch, loadMatches, syncCoins]);
+  const matchAct = useCallback<Store['matchAct']>(async (m, a) => {
+    const u = userRef.current; if (!u) return 'Nicht angemeldet';
+    if (m.cloud) {
+      try {
+        if (a.kind === 'respond') await Cloud.respondMatch(m.id, a.accept, a.text || '');
+        else if (a.kind === 'cancel') await Cloud.cancelMatch(m.id, a.text || '');
+        else if (a.kind === 'report') await Cloud.reportMatch(m.id, a.winner, a.score);
+        else if (a.kind === 'confirm') await Cloud.confirmMatch(m.id, a.ok, a.text || '');
+        else await Cloud.postMatchMessage(m.id, a.text);
+        await Promise.all([loadMatches(), a.kind === 'say' ? Promise.resolve() : syncCoins()]);
+        return null;
+      } catch (e) { return (e as Error).message; }
+    }
+    const me = u.id;
+    localMatch(m.id, y => {
+      if (a.kind === 'say') y.messages.push(msg(me, a.text));
+      if (a.kind === 'cancel') { y.status = 'cancelled'; if (a.text) y.messages.push(msg(me, a.text)); }
+      if (a.kind === 'report') { y.status = 'reported'; y.winner = a.winner; y.score = a.score || undefined; y.reportedBy = me; }
+    });
+    if (a.kind === 'report') {
+      setTimeout(() => localMatch(m.id, y => { if (y.status === 'reported') { y.status = 'done'; y.messages.push(msg(y.opponent, DEMO_REPLY.confirm())); } }), 1500);
+    }
+    return null;
+  }, [localMatch, loadMatches, syncCoins]);
+
   const refreshCloud = useCallback(async () => {
     if (!userRef.current?.cloud) return;
     const [friends, duels] = await Promise.all([Cloud.friends(), Cloud.duels()]);
     setCloud(c => ({ ...c, friends, duels }));
   }, []);
 
-  const value = useMemo<Store>(() => ({ ready, user, accounts, cloud, register, login, cloudLogin, logout, deleteAccount, update, connectHealth, connectSensor, syncSteps, refreshCloud, coinFlash, buy, equip, applyJoker, cheer, stake, syncCoins, clearSample }),
-    [ready, user, accounts, cloud, register, login, cloudLogin, logout, deleteAccount, update, connectHealth, connectSensor, syncSteps, refreshCloud, coinFlash, buy, equip, applyJoker, cheer, stake, syncCoins, clearSample]);
+  const value = useMemo<Store>(() => ({ ready, user, accounts, cloud, register, login, cloudLogin, logout, deleteAccount, update, connectHealth, connectSensor, syncSteps, refreshCloud, coinFlash, buy, equip, applyJoker, cheer, stake, syncCoins, clearSample, createMatch, matchAct }),
+    [ready, user, accounts, cloud, register, login, cloudLogin, logout, deleteAccount, update, connectHealth, connectSensor, syncSteps, refreshCloud, coinFlash, buy, equip, applyJoker, cheer, stake, syncCoins, clearSample, createMatch, matchAct]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

@@ -5,7 +5,8 @@ import { Platform } from 'react-native';
 
 import { DUEL_TYPES } from './data';
 import { digestOf, duelState, weekStats } from './logic';
-import type { Digest, Duel, User } from './types';
+import { nameOf, sportName } from './matches';
+import type { Digest, Duel, Match, User } from './types';
 import { addDays, mondayOf, nf, parseKey, today } from './util';
 
 Notifications.setNotificationHandler({
@@ -28,7 +29,7 @@ export async function enableNotifications() {
 const at = (dayKey: string, h: number, m = 0) => { const d = parseKey(dayKey); d.setHours(h, m, 0, 0); return d; };
 
 /** Alle FitDuell-Erinnerungen neu planen */
-export async function planReminders(u: User, cloudFriends: Digest[], cloudDuels: Duel[]) {
+export async function planReminders(u: User, cloudFriends: Digest[], cloudDuels: Duel[], cloudMatches: Match[] = []) {
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (!u.notify?.on) return;
   const now = Date.now(); const jobs: { date: Date; title: string; body: string }[] = [];
@@ -49,6 +50,13 @@ export async function planReminders(u: User, cloudFriends: Digest[], cloudDuels:
     const st = duelState(u, d, cloudFriends); const name = (st.fdg?.name || 'deinen Freund').replace(' (Demo)', '');
     const lead = st.me > st.them ? 'Du führst knapp – bleib dran.' : st.me < st.them ? 'Du liegst hinten – jetzt aufholen.' : 'Gleichstand – jede Einheit zählt.';
     jobs.push({ date: at(addDays(d.end, -1), 17), title: `Duell gegen ${name} endet morgen`, body: `${DUEL_TYPES[d.type]?.label}: ${lead}` });
+  }
+
+  // Sport-Herausforderungen: 1 Stunde vor dem Termin
+  for (const m of [...(u.matches || []), ...cloudMatches]) {
+    if (m.status !== 'accepted' || !m.playAt) continue;
+    const me = m.cloud ? u.cloud?.uid : u.id; const other = m.challenger === me ? m.opponent : m.challenger;
+    jobs.push({ date: new Date(m.playAt - 3600000), title: `Gleich: ${sportName(m.sport)} gegen ${nameOf(other, u, cloudFriends)}`, body: m.place ? `Um ${new Date(m.playAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · ${m.place}` : 'In einer Stunde geht es los.' });
   }
 
   for (const j of jobs.filter(x => x.date.getTime() > now + 60000)) {

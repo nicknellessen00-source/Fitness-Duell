@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { CoinIcon } from '@/components/coin';
 import { DuelRow } from '@/components/duel-row';
+import { MatchRow } from '@/components/match-row';
 import { Spot } from '@/components/spot';
 import { Avatar, Bib, Btn, Card, Divider, Field, Num, Row, Screen, Seg, T, ValueRow } from '@/components/ui';
 import { C, S } from '@/constants/theme';
@@ -12,6 +13,7 @@ import * as Cloud from '@/lib/cloud';
 import { GOALS, POINTS } from '@/lib/data';
 import { frameColor } from '@/lib/coins';
 import { allDuels, leaderboard } from '@/lib/logic';
+import { allMatches, matchState } from '@/lib/matches';
 import { nf } from '@/lib/util';
 
 export default function Friends() {
@@ -20,6 +22,8 @@ export default function Friends() {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
   const pts = (p: ReturnType<typeof leaderboard>[number]) => (mode === 'week' ? p.week.pts : p.total);
+  const all = allMatches(u, cloud.matches);
+  const matches = [...all.filter(m => matchState(u, m).active), ...all.filter(m => !matchState(u, m).active).slice(0, 3)];
   const duels = allDuels(u, cloud.duels).sort((a, b) => (a.end < b.end ? 1 : -1));
   const lb = leaderboard(u, cloud.friends, cloud.duels).sort((a, b) => pts(b) - pts(a));
 
@@ -63,6 +67,16 @@ export default function Friends() {
           );
         })}
       </Card></Spot>
+
+      <Card style={{ gap: 0 }} testID="matches">
+        <Row between style={{ marginBottom: S[1] }}>
+          <T v="h3">Herausforderungen</T>
+          <Btn title="Herausfordern" small kind="primary" onPress={() => router.push('/match-new')} testID="newMatch" />
+        </Row>
+        {matches.length ? matches.map((m, i) => <View key={m.id}>{i > 0 && <Divider />}<MatchRow m={m} /></View>)
+          : <T v="small" tone="muted" style={{ paddingVertical: S[2] }}>Tennis, Padel, Golf oder ein Lauf: Lade Freunde zu einem Match ein, schreib etwas dazu und setz FitCoins.</T>}
+        {cloud.matchesErr === 'missing' && <T v="meta" tone="muted">Mit Online-Freunden geht das, sobald matches.sql in Supabase eingespielt ist.</T>}
+      </Card>
 
       <Card style={{ gap: 0 }} testID="duels">
         <Row between style={{ marginBottom: S[1] }}>
