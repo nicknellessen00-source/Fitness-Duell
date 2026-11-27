@@ -51,7 +51,7 @@ export interface Match {
 }
 export interface CoinTx { key: string; amount: number; reason: CoinReason; at: number; note?: string; synced?: boolean }
 export type CoinReason = 'training' | 'steps' | 'pr' | 'streak' | 'challenge' | 'duel' | 'buy' | 'gift_in' | 'gift_out' | 'stake' | 'pot' | 'refund' | 'start';
-export interface Inventory { jokers: number; jokerWeeks: string[]; owned: string[]; shirt?: string; frame?: string }
+export interface Inventory { jokers: number; jokerWeeks: string[]; owned: string[]; shirt?: string; frame?: string; shorts?: string; shoes?: string; band?: string }
 export interface Day {
   vol: number; wo: number; kcal: number; steps: number; min: number; cardio: number; water: number; food: number;
   reps: Record<string, number>; sec: Record<string, number>; max: Record<string, number>;

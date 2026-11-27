@@ -3,7 +3,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from 'react-native';
 
 import * as Cloud from '@/lib/cloud';
-import { balance, emptyInv, pendingRewards, SHOP } from '@/lib/coins';
+import { balance, emptyInv, pendingRewards, SHOP, type WearKind } from '@/lib/coins';
+import { levelOf } from '@/lib/level';
 import { health, sensor } from '@/lib/health';
 import { DEMO_REPLY, msg } from '@/lib/matches';
 import { addSample, removeSample, withoutSample } from '@/lib/sample';
@@ -44,7 +45,7 @@ interface Store {
   /** FitCoins: zuletzt gutgeschrieben (für die kurze Einblendung) */
   coinFlash: { amount: number; text: string; id: number } | null;
   buy(itemId: string): Promise<string | null>;
-  equip(kind: 'shirt' | 'frame', itemId: string | undefined): void;
+  equip(kind: WearKind, itemId: string | undefined): void;
   applyJoker(mon: string): void;
   /** Coins an einen Online-Freund schicken; liefert eine Fehlermeldung oder null */
   cheer(friendUid: string, amount: number): Promise<string | null>;
@@ -301,18 +302,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const u = userRef.current; const it = SHOP.find(s => s.id === itemId);
     if (!u || !it) return 'Unbekannter Artikel';
     if (it.kind !== 'joker' && u.inv?.owned.includes(it.id)) return 'Schon gekauft';
+    if (it.minLevel && levelOf(u, cloudRef.current.matches || [], cloudRef.current.friends, cloudRef.current.duels).level < it.minLevel) return `Ab Level ${it.minLevel}`;
     const online = !!u.cloud && cloudRef.current.coins != null;
     const bal = online ? cloudRef.current.coins!.balance : balance(u);
     if (bal < it.price) return 'Nicht genug FitCoins';
     const key = `buy:${it.id}:${Date.now()}`;
     if (online) {
-      try { await Cloud.spendCoins(it.id, key); } catch (e) { return (e as Error).message; }
+      try { await Cloud.spendCoins(it.id, key); } catch (e) {
+        const m = (e as Error).message;
+        return /Unbekannter Artikel/.test(m) ? 'Dieser Artikel ist auf dem Server noch nicht freigeschaltet (supabase/shop.sql einspielen).' : m;
+      }
     }
     update(x => {
       x.coins = [...(x.coins || []), { key, amount: -it.price, reason: 'buy', at: Date.now(), note: it.name, synced: online }];
       const inv = x.inv || emptyInv();
       if (it.kind === 'joker') inv.jokers += 1;
-      else { inv.owned = [...inv.owned, it.id]; if (it.kind === 'shirt') inv.shirt = it.id; else inv.frame = it.id; }
+      else { inv.owned = [...inv.owned, it.id]; inv[it.kind] = it.id; }
       x.inv = inv;
     });
     if (online) syncCoins();
@@ -324,8 +329,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const stake = useCallback(async (duelCloudId: string, amount: number) => {
     try { await Cloud.stakeDuel(duelCloudId, amount); await syncCoins(); return null; } catch (e) { return (e as Error).message; }
   }, [syncCoins]);
-  const equip = useCallback((kind: 'shirt' | 'frame', itemId: string | undefined) => {
-    update(x => { const inv = x.inv || emptyInv(); if (kind === 'shirt') inv.shirt = itemId; else inv.frame = itemId; x.inv = inv; });
+  const equip = useCallback((kind: WearKind, itemId: string | undefined) => {
+    update(x => { const inv = x.inv || emptyInv(); inv[kind] = itemId; x.inv = inv; });
   }, [update]);
   const applyJoker = useCallback((mon: string) => {
     update(x => { const inv = x.inv || emptyInv(); if (inv.jokers < 1 || inv.jokerWeeks.includes(mon)) return; inv.jokers -= 1; inv.jokerWeeks = [...inv.jokerWeeks, mon]; x.inv = inv; });

@@ -2,12 +2,14 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
-import { Avatar, Btn, Card, Divider, Field, Row, Screen, Seg, T, ValueRow } from '@/components/ui';
+import { Mannequin, useLevel } from '@/components/mannequin';
+import { Avatar, Btn, Card, Divider, Field, Num, Row, Screen, Seg, T, Track, ValueRow } from '@/components/ui';
 import { C, S } from '@/constants/theme';
 import { useStore, useUser } from '@/context/app-store';
 import * as Cloud from '@/lib/cloud';
 import { GOALS, type GoalId } from '@/lib/data';
 import { confirmDestructive } from '@/lib/haptics';
+import { nextUnlock, XP } from '@/lib/level';
 import { calc } from '@/lib/logic';
 import { enableNotifications, notifySupported } from '@/lib/notify';
 import { nf } from '@/lib/util';
@@ -16,6 +18,7 @@ export default function Profile() {
   const u = useUser(); const { update, logout, deleteAccount } = useStore();
   const [delArmed, setDelArmed] = useState(false);
   const c = calc(u.profile);
+  const lv = useLevel(); const nu = nextUnlock(lv.level);
   const [email, setEmail] = useState(u.profile.email || '');
   const [pw, setPw] = useState('');
   const [msg, setMsg] = useState('');
@@ -45,6 +48,25 @@ export default function Profile() {
         <Row gap={S[3]}><Avatar name={u.profile.name} color={u.profile.color} size={40} /><T v="title">{u.profile.name}</T></Row>
         <Btn title="Fertig" small onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       </Row>
+      <Card testID="figureCard">
+        <Row gap={S[4]} style={{ alignItems: 'stretch' }}>
+          <Mannequin width={128} />
+          <View style={{ flex: 1, gap: S[2], justifyContent: 'center' }}>
+            <T v="meta" tone="muted">Deine Trainingsfigur</T>
+            <Row gap={S[2]} style={{ alignItems: 'baseline' }}>
+              <T v="small" tone="secondary">Level</T><Num size={30} testID="figLevel">{lv.level}</Num>
+            </Row>
+            <View style={{ alignSelf: 'flex-start', paddingHorizontal: S[2], paddingVertical: 2, borderRadius: 8, backgroundColor: lv.tier.color + '33' }}>
+              <T v="meta" strong>{lv.tier.name}</T>
+            </View>
+            <Track value={lv.into} max={lv.need} />
+            <T v="meta" tone="muted" testID="figXp">{nf(lv.need - lv.into)} XP bis Level {lv.level + 1}</T>
+            {nu && <T v="meta" tone="secondary">Ab Level {nu.level}: {nu.text}</T>}
+          </View>
+        </Row>
+        <Btn title="Figur einkleiden" kind="primary" onPress={() => router.push('/coins')} testID="figShop" />
+        <T v="meta" tone="muted">XP gibt es für Training ({XP.workoutBase}+ je Einheit), Schritte ({XP.per1000Steps} je 1.000), Bestleistungen (+{XP.pr}), Wochen-Challenges (+{XP.challenge}) und gewonnene Duelle und Herausforderungen. Höheres Level: kräftigere Figur und mehr Teile im Shop.</T>
+      </Card>
       <Card>
         <T v="h3">Ziel</T>
         <Seg items={(Object.keys(GOALS) as GoalId[]).slice(0, 3).map(k => [k, GOALS[k].label] as [GoalId, string])} value={u.profile.goal} onChange={k => update(x => { x.profile.goal = k; x.planIdx = 0; })} />

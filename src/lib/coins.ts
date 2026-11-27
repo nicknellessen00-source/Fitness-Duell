@@ -17,7 +17,8 @@ export const REASON_LABEL: Record<CoinReason, string> = {
 };
 
 /* ---------- Shop ---------- */
-export interface ShopItem { id: string; kind: 'joker' | 'shirt' | 'frame'; name: string; price: number; color?: string; desc: string }
+export type WearKind = 'shirt' | 'shorts' | 'shoes' | 'band' | 'frame';
+export interface ShopItem { id: string; kind: 'joker' | WearKind; name: string; price: number; color?: string; desc: string; /** ab diesem Level kaufbar */ minLevel?: number }
 export const SHOP: ShopItem[] = [
   { id: 'joker', kind: 'joker', name: 'Joker', price: 150, desc: 'Hebt einmal die −75 Punkte für eine verpasste Wochen-Challenge auf. Höchstens einmal pro Monat einsetzbar.' },
   { id: 'shirt-blue', kind: 'shirt', name: 'Shirt Blau', price: 80, color: '#2F7BFF', desc: 'Für deine Trainingsfigur' },
@@ -25,12 +26,24 @@ export const SHOP: ShopItem[] = [
   { id: 'shirt-pink', kind: 'shirt', name: 'Shirt Pink', price: 80, color: '#FF5FA2', desc: 'Für deine Trainingsfigur' },
   { id: 'shirt-black', kind: 'shirt', name: 'Shirt Schwarz', price: 120, color: '#26272B', desc: 'Für deine Trainingsfigur' },
   { id: 'shirt-gold', kind: 'shirt', name: 'Shirt Gold', price: 300, color: '#E7B416', desc: 'Für deine Trainingsfigur' },
+  { id: 'shorts-black', kind: 'shorts', name: 'Hose Schwarz', price: 60, color: '#1D1F24', desc: 'Für deine Trainingsfigur' },
+  { id: 'shorts-red', kind: 'shorts', name: 'Hose Rot', price: 80, color: '#E5484D', desc: 'Für deine Trainingsfigur', minLevel: 2 },
+  { id: 'shorts-lime', kind: 'shorts', name: 'Hose Lime', price: 120, color: '#9BD000', desc: 'Für deine Trainingsfigur', minLevel: 4 },
+  { id: 'shoes-black', kind: 'shoes', name: 'Schuhe Schwarz', price: 60, color: '#2A2C31', desc: 'Für deine Trainingsfigur' },
+  { id: 'shoes-orange', kind: 'shoes', name: 'Schuhe Orange', price: 90, color: '#FF8A3D', desc: 'Für deine Trainingsfigur', minLevel: 3 },
+  { id: 'shoes-gold', kind: 'shoes', name: 'Schuhe Gold', price: 250, color: '#E7B416', desc: 'Für deine Trainingsfigur', minLevel: 8 },
+  { id: 'band-red', kind: 'band', name: 'Stirnband Rot', price: 70, color: '#E5484D', desc: 'Für deine Trainingsfigur', minLevel: 2 },
+  { id: 'band-lime', kind: 'band', name: 'Stirnband Lime', price: 100, color: '#C4F000', desc: 'Für deine Trainingsfigur', minLevel: 5 },
+  { id: 'band-gold', kind: 'band', name: 'Stirnband Gold', price: 200, color: '#E7B416', desc: 'Für deine Trainingsfigur', minLevel: 10 },
   { id: 'frame-silver', kind: 'frame', name: 'Rahmen Silber', price: 100, color: '#A7ADB7', desc: 'Um dein Profilbild in der Rangliste' },
   { id: 'frame-lime', kind: 'frame', name: 'Rahmen Lime', price: 150, color: '#9BD000', desc: 'Um dein Profilbild in der Rangliste' },
   { id: 'frame-gold', kind: 'frame', name: 'Rahmen Gold', price: 250, color: '#E7B416', desc: 'Um dein Profilbild in der Rangliste' },
 ];
 export const SHIRT_DEFAULT = '#D7FF3A';
 export const shirtColor = (u: User) => SHOP.find(s => s.id === u.inv?.shirt)?.color || SHIRT_DEFAULT;
+const colorOf = (id?: string) => SHOP.find(s => s.id === id)?.color;
+/** Kleidung der Trainingsfigur */
+export const lookOf = (u: User) => ({ shirt: shirtColor(u), shorts: colorOf(u.inv?.shorts), shoes: colorOf(u.inv?.shoes), band: colorOf(u.inv?.band) });
 export const frameColor = (id?: string) => SHOP.find(s => s.id === id)?.color;
 export const emptyInv = (): Inventory => ({ jokers: 0, jokerWeeks: [], owned: [] });
 

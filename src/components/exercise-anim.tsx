@@ -4,19 +4,19 @@ import { SvgXml } from 'react-native-svg';
 
 import { R } from '@/constants/theme';
 import { useStore } from '@/context/app-store';
-import { SHIRT_DEFAULT, shirtColor } from '@/lib/coins';
-import { ANIM_RATIO, frameXml, stillXml } from '@/lib/anim-native';
+import { lookOf, SHIRT_DEFAULT } from '@/lib/coins';
+import { ANIM_RATIO, frameXml, stillXml, type Look } from '@/lib/anim-native';
 
 type Anim = { frames: unknown[]; dur?: number; stillAt?: number };
 
 /** Standbild für Listen */
 /** Shirt-Farbe aus dem Shop (oder Standard) */
-function useShirt(override?: string) {
+function useShirt(override?: Look): Look {
   const { user } = useStore();
-  return override || (user ? shirtColor(user) : SHIRT_DEFAULT);
+  return useMemo(() => override || (user ? lookOf(user) : { shirt: SHIRT_DEFAULT }), [override, user]);
 }
 
-export function ExerciseThumb({ anim, width = 64, style, shirt }: { anim: unknown; width?: number; style?: StyleProp<ViewStyle>; shirt?: string }) {
+export function ExerciseThumb({ anim, width = 64, style, shirt }: { anim: unknown; width?: number; style?: StyleProp<ViewStyle>; shirt?: Look }) {
   const color = useShirt(shirt);
   const xml = useMemo(() => stillXml(anim as Anim, color), [anim, color]);
   return (
@@ -27,7 +27,7 @@ export function ExerciseThumb({ anim, width = 64, style, shirt }: { anim: unknow
 }
 
 /** Abspielende Figur; läuft über die verstrichene Zeit, ~30 Bilder pro Sekunde */
-export function ExercisePlayer({ anim, playing = true, speed = 1, shirt }: { anim: unknown; playing?: boolean; speed?: number; shirt?: string }) {
+export function ExercisePlayer({ anim, playing = true, speed = 1, shirt }: { anim: unknown; playing?: boolean; speed?: number; shirt?: Look }) {
   const color = useShirt(shirt);
   const [t, setT] = useState(0);
   const tRef = useRef(0);

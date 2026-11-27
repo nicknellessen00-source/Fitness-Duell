@@ -108,6 +108,9 @@ declare
   me uuid := auth.uid();
   price integer := case p_item when 'joker' then 150 when 'shirt-blue' then 80 when 'shirt-orange' then 80
     when 'shirt-pink' then 80 when 'shirt-black' then 120 when 'shirt-gold' then 300
+    when 'shorts-black' then 60 when 'shorts-red' then 80 when 'shorts-lime' then 120
+    when 'shoes-black' then 60 when 'shoes-orange' then 90 when 'shoes-gold' then 250
+    when 'band-red' then 70 when 'band-lime' then 100 when 'band-gold' then 200
     when 'frame-silver' then 100 when 'frame-lime' then 150 when 'frame-gold' then 250 else null end;
 begin
   if me is null then raise exception 'Nicht angemeldet'; end if;

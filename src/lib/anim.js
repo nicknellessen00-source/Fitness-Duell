@@ -10,6 +10,9 @@
   const rad = d => d * Math.PI / 180;
   const dir = (a, len) => [Math.sin(rad(a)) * len, Math.cos(rad(a)) * len];
   const add = (p, v) => [p[0] + v[0], p[1] + v[1]];
+  // Trainingsfigur im Profil: Muskelmasse (1 = normal) und Ausrüstung (Stirnband), je Aufruf von render gesetzt
+  let BULK = 1, GEAR = null;
+  const bk = w => w * BULK, bk2 = w => w * (1 + (BULK - 1) * 0.5);
 
   function solve(p, view) {
     const pts = {};
@@ -231,16 +234,17 @@
   function leg(hip, kn, ft, to, sideOut) {
     // Schuh: Ferse etwas hinter dem Knöchel
     const fdir = unit(sub(to, ft)); const heel = add(ft, mul(fdir, -4));
-    let s = limb(kn, ft, 10, 7, 'fx-skin') + limb(hip, kn, 15, 11, 'fx-skin');
-    s += limb(hip, lerpP(hip, kn, 0.55), 16.5, 14, 'fx-shorts');
+    let s = limb(kn, ft, bk2(10), 7, 'fx-skin') + limb(hip, kn, bk(15), bk2(11), 'fx-skin');
+    s += limb(hip, lerpP(hip, kn, 0.55), bk(16.5), bk(14), 'fx-shorts');
     s += limb(heel, add(to, mul(fdir, 2)), 8, 6, 'fx-shoe');
     s += dot(kn, 5, 'fx-skin');
     void sideOut;
     return s;
   }
   function arm(sh, el, ha) {
-    let s = limb(el, ha, 8, 6, 'fx-skin') + limb(sh, el, 10.5, 8.5, 'fx-skin');
-    s += limb(sh, lerpP(sh, el, 0.42), 12, 11, 'fx-shirt');
+    let s = limb(el, ha, bk2(8), 6, 'fx-skin') + limb(sh, el, bk(10.5), bk2(8.5), 'fx-skin');
+    if (BULK > 1.05) s += dot(lerpP(sh, el, 0.55), bk(10.5) / 2 * (0.75 + (BULK - 1)), 'fx-skin'); // Bizeps
+    s += limb(sh, lerpP(sh, el, 0.42), bk(12), bk(11), 'fx-shirt');
     s += dot(ha, 4.2, 'fx-skin');
     return s;
   }
@@ -258,7 +262,8 @@
     const { sh1, sh2, hip1, hip2, shC, hipC } = P;
     const u = unit(sub(shC, hipC)); const n = perp(u);
     const wa1 = add(lerpP(hipC, shC, 0.42), mul(n, 12)), wa2 = add(lerpP(hipC, shC, 0.42), mul(n, -12));
-    const s1 = add(sh1, mul(u, 2)), s2 = add(sh2, mul(u, 2)), h1 = add(hip1, mul(n, 4)), h2 = add(hip2, mul(n, -4));
+    const wide = (BULK - 1) * 14; const sx1 = sub(sh1, shC), sx2 = sub(sh2, shC);
+    const s1 = add(add(sh1, mul(u, 2)), mul(unit(sx1), wide)), s2 = add(add(sh2, mul(u, 2)), mul(unit(sx2), wide)), h1 = add(hip1, mul(n, 4)), h2 = add(hip2, mul(n, -4));
     const d = `M${f1(s1[0])} ${f1(s1[1])} Q${f1(wa1[0] + n[0] * 3)} ${f1(wa1[1] + n[1] * 3)} ${f1(wa1[0])} ${f1(wa1[1])} L${f1(h1[0])} ${f1(h1[1])} L${f1(h2[0])} ${f1(h2[1])} L${f1(wa2[0])} ${f1(wa2[1])} Q${f1(wa2[0] - n[0] * 3)} ${f1(wa2[1] - n[1] * 3)} ${f1(s2[0])} ${f1(s2[1])} Z`;
     const b1 = add(lerpP(hipC, shC, 0.3), mul(n, 12.5)), b2 = add(lerpP(hipC, shC, 0.3), mul(n, -12.5)), c1 = add(hip1, mul(n, 6)), c2 = add(hip2, mul(n, -6));
     const shorts = `M${f1(b1[0])} ${f1(b1[1])} L${f1(b2[0])} ${f1(b2[1])} L${f1(c2[0])} ${f1(c2[1] + 4)} L${f1(c1[0])} ${f1(c1[1] + 4)} Z`;
@@ -269,8 +274,10 @@
     const up = dir(t, 1); let fw = perp(up); // Blickrichtung
     if (view === 'front') {
       const c = P.head;
-      return limb(P.shC, c, 8, 8, 'fx-skin') + dot(add(c, mul(up, 1.5)), L.head + 0.8, 'fx-hair') + dot(add(c, mul(up, -1)), L.head - 0.5, 'fx-skin')
+      let s = limb(P.shC, c, bk(8), bk(8), 'fx-skin') + dot(add(c, mul(up, 1.5)), L.head + 0.8, 'fx-hair') + dot(add(c, mul(up, -1)), L.head - 0.5, 'fx-skin')
         + dot(add(add(c, mul(fw, 4)), mul(up, -0.5)), 1.4, 'fx-eye') + dot(add(add(c, mul(fw, -4)), mul(up, -0.5)), 1.4, 'fx-eye');
+      if (GEAR && GEAR.band) s += limb(add(add(c, mul(fw, -L.head + 0.6)), mul(up, 4.5)), add(add(c, mul(fw, L.head - 0.6)), mul(up, 4.5)), 4.2, 4.2, 'fx-gear').replace('class="fx-gear"', `class="fx-gear" fill="${GEAR.band}"`);
+      return s;
     }
     // Seitenansicht: Gesicht zeigt in Richtung des Rumpf-„Vorne“
     const tu = unit(sub(P.shC, P.hipC)); const tn = perp(tu);
@@ -279,6 +286,7 @@
     let s = limb(P.shC, add(c, mul(up, -4)), 8, 7, 'fx-skin');
     s += dot(add(add(c, mul(up, 1.2)), mul(fw, -1.6)), L.head + 0.6, 'fx-hair');
     s += dot(add(c, mul(fw, 1.4)), L.head - 0.6, 'fx-skin');
+    if (GEAR && GEAR.band) s += limb(add(add(c, mul(fw, -L.head)), mul(up, 4)), add(add(c, mul(fw, L.head - 0.4)), mul(up, 4.5)), 4.2, 4.2, 'fx-gear').replace('class="fx-gear"', `class="fx-gear" fill="${GEAR.band}"`);
     s += dot(add(add(c, mul(fw, 6.2)), mul(up, 1)), 1.5, 'fx-eye');
     s += dot(add(add(c, mul(fw, -3.5)), mul(up, -0.5)), 2.4, 'fx-skin2');
     return s;
@@ -302,6 +310,7 @@
 
   function render(frame, anim) {
     const view = anim.view || 'side';
+    BULK = anim.bulk || 1; GEAR = anim.gear || null;
     const P = place(solve(frame, view), frame, anim);
     const ox = autoOffset(anim);
     // Bodenschatten: unter Hüfte/Füßen, kleiner je höher die Figur abhebt

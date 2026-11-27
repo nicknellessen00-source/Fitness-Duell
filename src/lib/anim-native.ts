@@ -5,6 +5,11 @@ import { frameAt, render } from './anim';
 const W = 240, H = 200; // muss zu anim.js passen
 
 type Paint = Record<string, string>;
+/** Kleidungsfarben der Figur (Shop); fehlende Teile in Standardfarbe */
+export interface Look { shirt?: string; shorts?: string; shoes?: string }
+type LookIn = Look | string | undefined;
+const asLook = (l: LookIn): Look => (typeof l === 'string' ? { shirt: l } : l || {});
+const lookKey = (l: LookIn) => { const x = asLook(l); return `${x.shirt || ''}/${x.shorts || ''}/${x.shoes || ''}`; };
 const PAINT: Record<string, Paint> = {
   'fx-bg': { fill: '#EEF0F3' },
   'fx-spot': { fill: '#4E7A00', 'fill-opacity': '0.06' },
@@ -39,16 +44,17 @@ const attrs = (p: Paint, tag: string, far: boolean) =>
   Object.entries(p).filter(([k]) => !tag.includes(` ${k}=`)).map(([k, v]) => ` ${k}="${far && (k === 'fill' || k === 'stroke') ? dim(v) : v}"`).join('');
 
 /** Klassen eines Abschnitts in Attribute umwandeln */
-function paint(s: string, far = false, shirt?: string) {
+function paint(s: string, far = false, look: Look = {}) {
   return s.replace(/<(\w+)([^>]*?)\sclass="([^"]*)"([^>]*?)(\/?)>/g, (_m, tag: string, a: string, cls: string, b: string, close: string) => {
-    const rest = a + b; const c = cls.trim(); const p = c === 'fx-shirt' && shirt ? { fill: shirt } : PAINT[c];
+    const rest = a + b; const c = cls.trim(); const over = c === 'fx-shirt' ? look.shirt : c === 'fx-shorts' ? look.shorts : c === 'fx-shoe' ? look.shoes : undefined;
+    const p = over ? { fill: over } : PAINT[c];
     return `<${tag}${rest}${p ? attrs(p, rest, far) : ''}${close}>`;
   });
 }
 /** Kontur: alle Formen dunkel und mit dicker Linie (im Web: .fx-outline * {...}) */
 function outline(s: string) {
   return s.replace(/<(path|line|circle|ellipse|rect)([^>]*?)(\/?)>/g, (_m, tag: string, a: string, close: string) => {
-    const clean = a.replace(/\sclass="[^"]*"/g, '').replace(/\sstroke-width="[^"]*"/g, '');
+    const clean = a.replace(/\sclass="[^"]*"/g, '').replace(/\sstroke-width="[^"]*"/g, '').replace(/\sfill="(?!none")[^"]*"/g, '');
     const hasFill = /\sfill="none"/.test(clean);
     return `<${tag}${clean}${hasFill ? '' : ' fill="#07090C"'} stroke="#07090C" stroke-width="3.4" stroke-linejoin="round"${close}>`;
   }).replace(/<g class="[^"]*">/g, '<g>');
@@ -60,7 +66,8 @@ function groupEnd(s: string, i: number) {
   return s.length;
 }
 
-export function toNativeSvg(inner: string, shirt?: string) {
+export function toNativeSvg(inner: string, lookIn?: LookIn) {
+  const shirt = asLook(lookIn);
   let out = ''; let i = 0;
   while (i < inner.length) {
     const o = inner.indexOf('<g class="fx-outline">', i), f = inner.indexOf('<g class="fx-far">', i);
@@ -75,13 +82,13 @@ export function toNativeSvg(inner: string, shirt?: string) {
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${out}</svg>`;
 }
 
-export const frameXml = (anim: unknown, t: number, shirt?: string) => toNativeSvg(render(frameAt(anim, t), anim), shirt);
+export const frameXml = (anim: unknown, t: number, look?: LookIn) => toNativeSvg(render(frameAt(anim, t), anim), look);
 
 const stillCache = new Map<string, string>();
 const animIds = new WeakMap<object, number>(); let animSeq = 0;
-export function stillXml(anim: { frames: unknown[]; dur?: number; stillAt?: number }, shirt?: string) {
+export function stillXml(anim: { frames: unknown[]; dur?: number; stillAt?: number }, shirt?: LookIn) {
   if (!animIds.has(anim)) animIds.set(anim, ++animSeq);
-  const ck = animIds.get(anim) + '|' + (shirt || '');
+  const ck = animIds.get(anim) + '|' + lookKey(shirt);
   let x = stillCache.get(ck);
   if (!x) {
     const n = anim.frames.length;
